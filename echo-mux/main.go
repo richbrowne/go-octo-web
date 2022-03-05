@@ -19,42 +19,59 @@ type UserDTO struct {
 	IsAdmin bool
 }
 
+type UserStore map[string]UserDTO
+
+var users UserStore
+
 func addUser(ctx echo.Context) error {
-	u := new(User)
-	if err := ctx.Bind(u); err != nil {
+	aUser := new(User)
+	if err := ctx.Bind(aUser); err != nil {
 		return nil
 	}
 
-	user := UserDTO{
-		Name:    u.Name,
-		Email:   u.Email,
+	sUser := UserDTO{
+		Name:    aUser.Name,
+		Email:   aUser.Email,
 		IsAdmin: false,
 	}
-	log.Debugf("%+v", user)
 
-	return ctx.JSON(http.StatusOK, u)
+	if u, exists := users[aUser.Name]; !exists {
+		users[u.Name] = sUser
+	}
+
+	return ctx.JSON(http.StatusOK, aUser)
 }
 
 func getUser(ctx echo.Context) error {
-	u := new(User)
-	if err := ctx.Bind(u); err != nil {
-		return nil
+	name := ctx.Param("name")
+	if u, exists := users[name]; exists {
+		resp := User{
+			Name:  u.Name,
+			Email: u.Email,
+		}
+		return ctx.JSON(http.StatusOK, resp)
+	} else {
+		return echo.ErrNotFound
 	}
+}
 
-	return ctx.JSON(http.StatusOK, u)
+func deleteUser(ctx echo.Context) error {
+	name := ctx.Param("name")
+	delete(users, name)
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 func main() {
 	e := echo.New()
-	e.Debug = true
 	log.SetLevel(log.DEBUG)
 	if l, ok := e.Logger.(*log.Logger); ok {
 		l.SetHeader("${time_rfc3339} ${level} ${prefix} ${long_file} ${line}")
-		l.SetLevel(log.DEBUG)
 	}
-	
-	e.GET("/users", getUser)
+
+	users = make(UserStore)
+	e.GET("/users/:id", getUser)
 	e.POST("/users", addUser)
+	e.DELETE("/users/:id", deleteUser)
 
 	e.Logger.Fatal(e.Start(":1323"))
 }
