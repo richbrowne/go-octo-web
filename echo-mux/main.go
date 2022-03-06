@@ -6,18 +6,6 @@ import (
 	"github.com/richbrowne/go-octo-web/echo-mux/adapters/rest/api/v1/users"
 )
 
-// User
-type User struct {
-	Name  string `json:"name" form:"name" query:"name"`
-	Email string `json:"email" form:"email" query:"email"`
-}
-
-type UserDTO struct {
-	Name    string
-	Email   string
-	IsAdmin bool
-}
-
 func main() {
 	e := echo.New()
 	log.SetLevel(log.DEBUG)
